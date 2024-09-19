@@ -1,0 +1,96 @@
+version: '3.8'
+services:
+  api-gateway:
+    build:
+      context: .
+      dockerfile: api-gateway/Dockerfile
+    ports:
+      - "9443:9443"
+    depends_on:
+      - registry
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://registry:8761/eureka/
+      - SPRING_PROFILES_ACTIVE=docker
+    networks:
+      - my_network
+
+  registry:
+    build:
+      context: .
+      dockerfile: registry/Dockerfile
+    ports:
+      - "8761:8761"
+    environment:
+      - EUREKA_CLIENT_REGISTER_WITH_EUREKA=false
+      - EUREKA_CLIENT_FETCH_REGISTRY=false
+    networks:
+      - my_network
+
+  access-mgmt:
+    build:
+      context: .
+      dockerfile: access-mgmt/Dockerfile
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/access-mgmt?useUnicode=true&characterEncoding=utf8
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: Juvarya@2020
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://registry:8761/eureka/
+      SPRING_APPLICATION_NAME: access-mgmt
+    ports:
+      - "9097:9097"
+    depends_on:
+      - db
+    networks:
+      - my_network
+
+  customer:
+    build:
+      context: .
+      dockerfile: nivaas/customer/Dockerfile
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://nivaascustomer-db:3306/nivaascustomer?useUnicode=true&characterEncoding=utf8
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: Juvarya@2020
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://registry:8761/eureka/
+      SPRING_APPLICATION_NAME: customer
+    ports:
+      - "9092:9092"
+    depends_on:
+      - registry
+      - nivaascustomer-db
+    networks:
+      - my_network
+
+  db:
+    image: mysql:8.0
+    environment:
+      MYSQL_DATABASE: access-mgmt
+      MYSQL_ROOT_PASSWORD: Juvarya@2020
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+    networks:
+      - my_network
+
+  nivaascustomer-db:
+    image: mysql:8.0
+    environment:
+      MYSQL_DATABASE: nivaascustomer
+      MYSQL_ROOT_PASSWORD: Juvarya@2020
+    ports:
+      - "3307:3306"
+    volumes:
+      - nivaascustomer_db_data:/var/lib/mysql
+    networks:
+      - my_network
+
+networks:
+  my_network:
+    driver: bridge
+  default:
+    name: my_network
+
+volumes:
+  db_data:
+  nivaascustomer_db_data:
