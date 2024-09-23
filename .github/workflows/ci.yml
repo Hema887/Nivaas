@@ -13,7 +13,7 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v2
 
-    # Set the working
+    # Set the working with maven
     - name: Build with Maven
       run: mvn clean install -X
       working-directory: ./juvarya
