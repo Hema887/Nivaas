@@ -1,13 +1,18 @@
 pipeline {
     agent any
     tools {
-        maven 'myMaven'
+        maven 'myMaven'  // Define the Maven tool
+    }
+    environment {
+        DB_URL = 'jdbc:mysql://localhost:3306/access-mgmt?useUnicode=true&characterEncoding=utf8'
+        DB_USER = 'root'
+        DB_PASSWORD = credentials('Juvarya@2020')  // Use Jenkins credentials for secure DB password
     }
     stages {
         stage('List Directory') {
             steps {
                 dir('juvarya') {  
-                    sh 'ls -l'  
+                    sh 'ls -l'  // List directory contents
                 }
             }
         }
@@ -15,7 +20,12 @@ pipeline {
             steps {
                 dir('juvarya') {  
                     configFileProvider([configFile(fileId: '4d7332cf-5a01-4a19-b898-2c239983c080', variable: 'MAVEN_SETTINGS')]) {
-                        sh 'mvn clean install --settings $MAVEN_SETTINGS'
+                        sh '''
+                        mvn clean install --settings $MAVEN_SETTINGS \
+                        -Dspring.datasource.url=jdbc:mysql://localhost:3306/access-mgmt?useUnicode=true&characterEncoding=utf8 \
+                        -Dspring.datasource.username=root\
+                        -Dspring.datasource.password=Juvarya@2020
+                        '''
                     }
                 }
             }
