@@ -6,7 +6,7 @@ pipeline {
     environment {
         DB_URL = 'jdbc:mysql://localhost:3306/access-mgmt?useUnicode=true&characterEncoding=utf8'
         DB_USER = 'root'
-        DB_PASSWORD = credentials('Juvarya@2020')  // Use Jenkins credentials for secure DB password
+        DB_PASSWORD = credentials('118a7dd0-a53c-4f0f-9a19-f309a65c76fa')  // Use Jenkins credentials for secure DB password
     }
     stages {
         stage('List Directory') {
