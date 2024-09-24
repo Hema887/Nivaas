@@ -22,5 +22,5 @@ jobs:
 
       # Build
       - name: Build with Maven
-        run: mvn test -e -X
+        run: mvn clean install
         working-directory: ./juvarya
