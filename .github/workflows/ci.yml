@@ -20,7 +20,7 @@ jobs:
           java-version: '11'
           distribution: 'adopt'
 
-      # Build with Maven
+      # Build
       - name: Build with Maven
         run: mvn clean install -X
         working-directory: ./juvarya
