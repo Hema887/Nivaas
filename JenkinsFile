@@ -1,24 +1,46 @@
 pipeline {
     agent any
     tools {
-        maven 'myMaven'
+        maven 'myMaven' // Ensure 'myMaven' is configured in Jenkins
     }
+
     stages {
-        stage('List Directory') {
+        stage('Build') {
             steps {
-                dir('juvarya') {  
-                    sh 'ls -l'  
+                // Navigate to the project directory and build the application
+                dir('juvarya') { 
+                    // sh 'mvn clean install'
                 }
             }
         }
-        stage('Build') {
+
+        stage('Deploy') {
             steps {
-                dir('juvarya') {  
-                    configFileProvider([configFile(fileId: '4d7332cf-5a01-4a19-b898-2c239983c080', variable: 'MAVEN_SETTINGS')]) {
-                        sh 'mvn clean install --settings $MAVEN_SETTINGS'
-                    }
+                // Ensure you specify the SSH credentials here
+                sshagent(['6141d2f1-dd35-46de-8af1-e298f328a4b4']) {
+                    // Execute commands on the remote server
+                    sh '''
+                        ssh jenkins@20.2.249.184 '
+                        git config --global --add safe.directory /opt/Sample/juvarya &&
+                        cd /opt/Sample/juvarya &&
+                        git stash &&  # Stash local changes
+                        git pull --allow-unrelated-histories &&  # Perform git pull
+                        git checkout origin/main -- JenkinsFile &&  # Force pull only JenkinsFile
+                        git stash pop &&  # Pop the stashed changes back
+                        mvn clean install  # Build the project
+                        '
+                    '''
                 }
             }
+        }
+    }
+
+    post {
+        success {
+            echo 'Deployment was successful!'
+        }
+        failure {
+            echo 'Deployment failed. Please check the logs.'
         }
     }
 }
