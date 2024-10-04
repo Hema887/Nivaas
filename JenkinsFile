@@ -1,18 +1,33 @@
 pipeline {
     agent any
-    tools {
-        maven 'myMaven' // Ensure 'myMaven' is configured in Jenkins
+
+    triggers {
+        githubPullRequest()
     }
 
     stages {
-        stage('Build') {
+        stage('Test') {
             steps {
-                // Navigate to the project directory and build the application
-                dir('juvarya') { 
-                    sh 'mvn clean install'
-                }
+                // Run your unit tests
+                sh 'mvn clean install'
+            }
+        }
+
+        stage('Deploy') {
+            when {
+                branch 'main'
+            }
+            steps {
+                // Deploy backend app after merging PR to main
+                sh 'scp target/backend.jar jenkins@20.2.249.184:opt/Sample/juvarya'
+                sh 'ssh jenkins@20.2.249.184 "systemctl restart backend-service"'
             }
         }
     }
 
+    post {
+        always {
+            cleanWs()
+        }
+    }
 }
