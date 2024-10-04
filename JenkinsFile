@@ -8,7 +8,6 @@ pipeline {
     stages {
         stage('Test') {
             steps {
-                // Run your unit tests
                 sh 'mvn clean install'
             }
         }
