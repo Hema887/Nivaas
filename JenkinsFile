@@ -5,23 +5,29 @@ pipeline {
     }
 
     stages {
-        stage('Build') {
+        stage('PR Build') {
             when {
-                changeRequest()  // This ensures the build runs only for pull requests
+                changeRequest()  // Runs only for pull requests
             }
             steps {
                 dir('juvarya') { 
-                    sh 'mvn clean install'  // Build the application
+                    sh 'mvn clean install'  // Run Maven build for the PR
                 }
             }
         }
 
-        stage('Deploy') {
+        stage('Post-Merge Deployment') {
             when {
-                branch 'main'  // This ensures deployment happens only after merging to the 'main' branch
+                expression {
+                    // Ensure deployment happens only after a PR is merged into the 'main' branch
+                    return env.ghprbTargetBranch == 'main' && env.ghprbPullId == null  // PR merged
+                }
             }
             steps {
-                // Ensure you specify the SSH credentials here
+                script {
+                    echo 'Pull request merged into main branch successfully!'
+                }
+                // SSH into the VM and perform git pull and deployment
                 sshagent(['6141d2f1-dd35-46de-8af1-e298f328a4b4']) {
                     sh '''
                         ssh jenkins@20.2.249.184 '
@@ -40,7 +46,7 @@ pipeline {
 
     post {
         success {
-            echo 'Deployment was successful!'
+            echo 'Deployment and build were successful!'
         }
         failure {
             echo 'Deployment failed. Please check the logs.'
