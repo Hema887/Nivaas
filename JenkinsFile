@@ -5,7 +5,7 @@ pipeline {
         KUBECONFIG_CREDENTIALS_ID = 'kubeconfig-credentials-id' 
         DOCKER_REGISTRY_CREDENTIALS = 'docker-registry-credentials-id'
         NAMESPACE = 'default'
-        MAVEN_PROJECT_DIR = '/opt/Sample/juvarya'  // Update the path to your project directory
+        MAVEN_PROJECT_DIR = '/opt/Sample/juvarya'
     }
 
     stages {
