@@ -13,7 +13,7 @@ pipeline {
             steps {
                 echo "Pull request detected, running mvn clean install..."
                 dir('juvarya') { 
-                    sh 'mvn clean install'  // Run Maven build for the PR
+                    sh 'mvn clean install'
                 }
             }
         }
@@ -22,7 +22,7 @@ pipeline {
         stage('Post-Merge Deployment') {
             when {
                 expression {
-                    return env.ghprbTargetBranch == 'main' && env.ghprbPullId == null  // Deployment after PR is merged to main
+                    return env.ghprbTargetBranch == 'main' && env.ghprbPullId == null
                 }
             }
             steps {
