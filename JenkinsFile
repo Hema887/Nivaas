@@ -1,82 +1,54 @@
 pipeline {
     agent any
-    environment {
-        DOCKER_IMAGE = 'my-docker-image'
-        KUBECONFIG_CREDENTIALS_ID = 'kubeconfig-credentials-id' 
-        DOCKER_REGISTRY_CREDENTIALS = 'docker-registry-credentials-id'
-        NAMESPACE = 'default'
-        MAVEN_PROJECT_DIR = '/opt/Sample/juvarya'  // Update the path to your project directory
+    tools {
+        maven 'myMaven' // Ensure 'myMaven' is configured in Jenkins
     }
 
     stages {
-        stage('Checkout') {
-            steps {
-                // Pull the code
-                checkout scm
-            }
-        }
-
-        stage('Maven Clean on PR') {
+        // PR Build - Triggered when a pull request is raised
+        stage('PR Build') {
             when {
-                changeRequest() // This runs only when a PR is raised
+                changeRequest()  // Ensures that this stage runs when a PR is raised
             }
             steps {
-                // Clean the project using Maven
-                script {
-                    sh """
-                    cd $MAVEN_PROJECT_DIR
-                    ls -l  // List the files to confirm the correct directory
-                    mvn clean install  // Run Maven clean install
-                    """
+                echo "Pull request detected, running mvn clean install..."
+                dir('juvarya') { 
+                    sh 'mvn clean install'  // Run Maven build for the PR
                 }
             }
         }
 
-        stage('Build and Test') {
+        // Post-Merge Deployment - Triggered when the PR is merged into main
+        stage('Post-Merge Deployment') {
             when {
-                not { changeRequest() } // Only run if it's NOT a PR
+                expression {
+                    return env.ghprbTargetBranch == 'main' && env.ghprbPullId == null  // Deployment after PR is merged to main
+                }
             }
             steps {
-                // Run Maven build and tests
-                script {
-                    sh """
-                    cd $MAVEN_PROJECT_DIR
-                    ls -l  // List the files to confirm the correct directory
-                    mvn clean install  // Run Maven clean install
-                    """
+                echo "Merge into main branch detected, deploying..."
+                sshagent(['6141d2f1-dd35-46de-8af1-e298f328a4b4']) {
+                    sh '''
+                        ssh jenkins@20.2.249.184 '
+                        git config --global --add safe.directory /opt/Sample/juvarya &&
+                        cd /opt/Sample/juvarya &&
+                        git stash &&
+                        git pull --allow-unrelated-histories &&
+                        git stash pop &&
+                        mvn clean install
+                        '
+                    '''
                 }
             }
         }
+    }
 
-        stage('Build Docker Image') {
-            when {
-                not { changeRequest() } // Run after PR is merged
-            }
-            steps {
-                script {
-                    // Build Docker image
-                    sh """
-                    docker build -t my-docker-image:1 .
-                    echo $DOCKER_PASS | docker login -u jenkins260 --password-stdin
-                    docker push my-docker-image:1
-                    """
-                }
-            }
+    post {
+        success {
+            echo 'Build and deployment were successful!'
         }
-
-        stage('Deploy to Kubernetes') {
-            when {
-                not { changeRequest() } // Deploy only after merge
-            }
-            steps {
-                script {
-                    withCredentials([file(credentialsId: KUBECONFIG_CREDENTIALS_ID, variable: 'KUBECONFIG')]) {
-                        sh """
-                        kubectl --kubeconfig=$KUBECONFIG set image deployment/backend backend=my-docker-image:1 -n $NAMESPACE
-                        """
-                    }
-                }
-            }
+        failure {
+            echo 'Build or deployment failed. Please check the logs.'
         }
     }
 }
