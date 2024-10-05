@@ -1,11 +1,10 @@
 pipeline {
     agent any
     tools {
-        maven 'myMaven' // Ensure 'myMaven' is configured in Jenkins
+        maven 'myMaven'
     }
 
     stages {
-        // PR Build - Triggered when a pull request is raised
         stage('PR Build') {
             when {
                 changeRequest()  // Ensures that this stage runs when a PR is raised
