@@ -5,7 +5,7 @@ pipeline {
         KUBECONFIG_CREDENTIALS_ID = 'kubeconfig-credentials-id' 
         DOCKER_REGISTRY_CREDENTIALS = 'docker-registry-credentials-id'
         NAMESPACE = 'default'
-	MAVEN_PROJECT_DIR = 'C:/Users/user_/Nivaas/juvarya'
+        MAVEN_PROJECT_DIR = './juvarya'  // Update the path to your project directory
     }
 
     stages {
@@ -23,7 +23,11 @@ pipeline {
             steps {
                 // Clean the project using Maven
                 script {
-                    sh 'mvn clean install'  // Use 'sh' for Linux agents
+                    sh """
+                    cd $MAVEN_PROJECT_DIR
+                    ls -l  // List the files to confirm the correct directory
+                    mvn clean install  // Run Maven clean install
+                    """
                 }
             }
         }
@@ -35,7 +39,11 @@ pipeline {
             steps {
                 // Run Maven build and tests
                 script {
-                    sh 'mvn clean install'
+                    sh """
+                    cd $MAVEN_PROJECT_DIR
+                    ls -l  // List the files to confirm the correct directory
+                    mvn clean install  // Run Maven clean install
+                    """
                 }
             }
         }
