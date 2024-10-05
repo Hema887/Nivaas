@@ -5,38 +5,37 @@ pipeline {
     }
 
     stages {
+        // PR Build - Triggered when a pull request is raised
         stage('PR Build') {
             when {
-                changeRequest()  // Runs only for pull requests
+                changeRequest()  // Ensures that this stage runs when a PR is raised
             }
             steps {
+                echo "Pull request detected, running mvn clean install..."
                 dir('juvarya') { 
                     sh 'mvn clean install'  // Run Maven build for the PR
                 }
             }
         }
 
+        // Post-Merge Deployment - Triggered when the PR is merged into main
         stage('Post-Merge Deployment') {
             when {
                 expression {
-                    // Ensure deployment happens only after a PR is merged into the 'main' branch
-                    return env.ghprbTargetBranch == 'main' && env.ghprbPullId == null  // PR merged
+                    return env.ghprbTargetBranch == 'main' && env.ghprbPullId == null  // Deployment after PR is merged to main
                 }
             }
             steps {
-                script {
-                    echo 'Pull request merged into main branch successfully!'
-                }
-                // SSH into the VM and perform git pull and deployment
+                echo "Merge into main branch detected, deploying..."
                 sshagent(['6141d2f1-dd35-46de-8af1-e298f328a4b4']) {
                     sh '''
                         ssh jenkins@20.2.249.184 '
                         git config --global --add safe.directory /opt/Sample/juvarya &&
                         cd /opt/Sample/juvarya &&
-                        git stash &&  # Stash any local changes
-                        git pull --allow-unrelated-histories &&  # Pull the latest code
-                        git stash pop &&  # Reapply stashed changes
-                        mvn clean install  # Build the application on the VM
+                        git stash &&
+                        git pull --allow-unrelated-histories &&
+                        git stash pop &&
+                        mvn clean install
                         '
                     '''
                 }
@@ -46,10 +45,10 @@ pipeline {
 
     post {
         success {
-            echo 'Deployment and build were successful!'
+            echo 'Build and deployment were successful!'
         }
         failure {
-            echo 'Deployment failed. Please check the logs.'
+            echo 'Build or deployment failed. Please check the logs.'
         }
     }
 }
