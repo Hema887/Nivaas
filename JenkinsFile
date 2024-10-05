@@ -25,8 +25,8 @@ pipeline {
                 script {
                     sh """
                     cd $MAVEN_PROJECT_DIR
-                    ls -l  // List the files to confirm the correct directory
-                    mvn clean install  // Run Maven clean install
+                    ls -l
+                    mvn clean install
                     """
                 }
             }
@@ -34,15 +34,15 @@ pipeline {
 
         stage('Build and Test') {
             when {
-                not { changeRequest() } // Only run if it's NOT a PR
+                not { changeRequest() }
             }
             steps {
                 // Run Maven build and tests
                 script {
                     sh """
                     cd $MAVEN_PROJECT_DIR
-                    ls -l  // List the files to confirm the correct directory
-                    mvn clean install  // Run Maven clean install
+                    ls -l
+                    mvn clean install
                     """
                 }
             }
