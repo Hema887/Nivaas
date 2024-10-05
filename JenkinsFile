@@ -1,21 +1,79 @@
 pipeline {
     agent any
-    tools {
-        maven 'myMaven'
+    environment {
+        DOCKER_IMAGE = 'my-docker-image'
+        KUBECONFIG_CREDENTIALS_ID = 'kubeconfig-credentials-id' 
+        DOCKER_REGISTRY_CREDENTIALS = 'docker-registry-credentials-id'
+        NAMESPACE = 'default'
+        MAVEN_PROJECT_DIR = '/opt/Sample/juvarya'  // Update the path to your project directory
     }
+
     stages {
-        stage('List Directory') {
+        stage('Checkout') {
             steps {
-                dir('juvarya') {  
-                    sh 'ls -l'  
+                // Pull the code
+                checkout scm
+            }
+        }
+
+        stage('Maven Clean on PR') {
+            when {
+                changeRequest() // This runs only when a PR is raised
+            }
+            steps {
+                // Clean the project using Maven
+                script {
+                    sh """
+                    cd $MAVEN_PROJECT_DIR
+                    ls -l  // List the files to confirm the correct directory
+                    mvn clean install  // Run Maven clean install
+                    """
                 }
             }
         }
-        stage('Build') {
+
+        stage('Build and Test') {
+            when {
+                not { changeRequest() } // Only run if it's NOT a PR
+            }
             steps {
-                dir('juvarya') {  
-                    configFileProvider([configFile(fileId: '4d7332cf-5a01-4a19-b898-2c239983c080', variable: 'MAVEN_SETTINGS')]) {
-                        sh 'mvn clean install --settings $MAVEN_SETTINGS'
+                // Run Maven build and tests
+                script {
+                    sh """
+                    cd $MAVEN_PROJECT_DIR
+                    ls -l  // List the files to confirm the correct directory
+                    mvn clean install  // Run Maven clean install
+                    """
+                }
+            }
+        }
+
+        stage('Build Docker Image') {
+            when {
+                not { changeRequest() } // Run after PR is merged
+            }
+            steps {
+                script {
+                    // Build Docker image
+                    sh """
+                    docker build -t my-docker-image:1 .
+                    echo $DOCKER_PASS | docker login -u jenkins260 --password-stdin
+                    docker push my-docker-image:1
+                    """
+                }
+            }
+        }
+
+        stage('Deploy to Kubernetes') {
+            when {
+                not { changeRequest() } // Deploy only after merge
+            }
+            steps {
+                script {
+                    withCredentials([file(credentialsId: KUBECONFIG_CREDENTIALS_ID, variable: 'KUBECONFIG')]) {
+                        sh """
+                        kubectl --kubeconfig=$KUBECONFIG set image deployment/backend backend=my-docker-image:1 -n $NAMESPACE
+                        """
                     }
                 }
             }
