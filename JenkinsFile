@@ -1,82 +1,49 @@
 pipeline {
     agent any
-    environment {
-        DOCKER_IMAGE = 'my-docker-image'
-        KUBECONFIG_CREDENTIALS_ID = 'kubeconfig-credentials-id' 
-        DOCKER_REGISTRY_CREDENTIALS = 'docker-registry-credentials-id'
-        NAMESPACE = 'default'
-        MAVEN_PROJECT_DIR = '/opt/Sample/juvarya'
+    tools {
+        maven 'myMaven' // Ensure 'myMaven' is configured in Jenkins
     }
 
     stages {
-        stage('Checkout') {
-            steps {
-                // Pull the code
-                checkout scm
-            }
-        }
-
-        stage('Maven Clean on PR') {
+        stage('Build') {
             when {
-                changeRequest() // This runs only when a PR is raised
+                changeRequest()  // This ensures the build runs only for pull requests
             }
             steps {
-                // Clean the project using Maven
-                script {
-                    sh """
-                    cd $MAVEN_PROJECT_DIR
-                    ls -l
-                    // mvn clean install
-                    """
+                dir('juvarya') { 
+                    sh 'mvn clean install'  // Build the application
                 }
             }
         }
 
-        stage('Build and Test') {
+        stage('Deploy') {
             when {
-                not { changeRequest() }
+                branch 'main'  // This ensures deployment happens only after merging to the 'main' branch
             }
             steps {
-                // Run Maven build and tests
-                script {
-                    sh """
-                    cd $MAVEN_PROJECT_DIR
-                    ls -l
-                    mvn clean install
-                    """
+                // Ensure you specify the SSH credentials here
+                sshagent(['6141d2f1-dd35-46de-8af1-e298f328a4b4']) {
+                    sh '''
+                        ssh jenkins@20.2.249.184 '
+                        git config --global --add safe.directory /opt/Sample/juvarya &&
+                        cd /opt/Sample/juvarya &&
+                        git stash &&  # Stash any local changes
+                        git pull --allow-unrelated-histories &&  # Pull the latest code
+                        git stash pop &&  # Reapply stashed changes
+                        mvn clean install  # Build the application on the VM
+                        '
+                    '''
                 }
             }
         }
+    }
 
-        stage('Build Docker Image') {
-            when {
-                not { changeRequest() } // Run after PR is merged
-            }
-            steps {
-                script {
-                    // Build Docker image
-                    sh """
-                    docker build -t my-docker-image:1 .
-                    echo $DOCKER_PASS | docker login -u jenkins260 --password-stdin
-                    docker push my-docker-image:1
-                    """
-                }
-            }
+    post {
+        success {
+            echo 'Deployment was successful!'
         }
-
-        stage('Deploy to Kubernetes') {
-            when {
-                not { changeRequest() } // Deploy only after merge
-            }
-            steps {
-                script {
-                    withCredentials([file(credentialsId: KUBECONFIG_CREDENTIALS_ID, variable: 'KUBECONFIG')]) {
-                        sh """
-                        kubectl --kubeconfig=$KUBECONFIG set image deployment/backend backend=my-docker-image:1 -n $NAMESPACE
-                        """
-                    }
-                }
-            }
+        failure {
+            echo 'Deployment failed. Please check the logs.'
         }
     }
 }
