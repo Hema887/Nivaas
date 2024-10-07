@@ -1,0 +1,8 @@
+node {
+    stage('Checkout Code') {
+        checkout([$class: 'GitSCM',
+                  branches: [[name: '*/main']],  // branch to checkout
+                  userRemoteConfigs: [[url: 'https://github.com/Nivaas.git']]]
+        )
+    }
+}
