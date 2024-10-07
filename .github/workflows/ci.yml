@@ -1,26 +1,30 @@
-name: Java CI with Maven
+name: Deploy to VM on PR Merge
 
+# Trigger this workflow on pull request merge to the main branch
 on:
-  push:
+  pull_request:
+    types: [closed]  # Only trigger when PR is closed
     branches:
-      - main
-
+      - main         # Specify the target branch
+  
 jobs:
-  build:
+  deploy:
+    if: github.event.pull_request.merged == true  # Only proceed if the PR was merged
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
+    - name: Checkout the code
+      uses: actions/checkout@v3
 
-      # Set
-      - name: Set up JDK 11
-        uses: actions/setup-java@v3
-        with:
-          java-version: '11'
-          distribution: 'adopt'
+    - name: Install SSH agent
+      uses: webfactory/ssh-agent@v0.7.0
+      with:
+        ssh-private-key:ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDSooemo7Un1ArRxHcIwIeAtahPFvv3zbAMx0Ue6o9GEM8hM5k0zyNkw8CQw07Go/14l6AoiSAopv5sUPR>
 
-      # Build with Maven
-      - name: Build with Maven
-        run: mvn clean install
-        working-directory: ./juvarya
+    - name: Deploy to VM
+      run: |
+        ssh -o StrictHostKeyChecking=no jenkins@20.2.249.184 << 'EOF'
+        cd /opt/Sample/juvarya  # Navigate to your project directory on the VM
+        git pull origin main      # Pull the latest code from GitHub
+        ./deploy.sh               # Run your custom deployment script
+        EOF
