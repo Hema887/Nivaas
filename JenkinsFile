@@ -1,53 +1,8 @@
-pipeline {
-    agent any
-    tools {
-        maven 'myMaven'
-    }
-
-    stages {
-        stage('PR Build') {
-            when {
-                changeRequest()  // Ensures that this stage runs when a PR is raised
-            }
-            steps {
-                echo "Pull request detected, running mvn clean install..."
-                dir('juvarya') { 
-                    sh 'mvn clean install'
-                }
-            }
-        }
-
-        // Post-Merge Deployment - Triggered when the PR is merged into main
-        stage('Post-Merge Deployment') {
-            when {
-                expression {
-                    return env.ghprbTargetBranch == 'main' && env.ghprbPullId == null
-                }
-            }
-            steps {
-                echo "Merge into main branch detected, deploying..."
-                sshagent(['6141d2f1-dd35-46de-8af1-e298f328a4b4']) {
-                    sh '''
-                        ssh jenkins@20.2.249.184 '
-                        git config --global --add safe.directory /opt/Sample/juvarya &&
-                        cd /opt/Sample/juvarya &&
-                        git stash &&
-                        git pull --allow-unrelated-histories &&
-                        git stash pop &&
-                        mvn clean install
-                        '
-                    '''
-                }
-            }
-        }
-    }
-
-    post {
-        success {
-            echo 'Build and deployment were successful!'
-        }
-        failure {
-            echo 'Build or deployment failed. Please check the logs.'
-        }
+node {
+    stage('Checkout Code') {
+        checkout([$class: 'GitSCM',
+                  branches: [[name: '*/main']],  // branch to checkout
+                  userRemoteConfigs: [[url: 'https://github.com/Nivaas.git']]]
+        )
     }
 }
