@@ -17,7 +17,7 @@ pipeline {
                     # Change to the directory
                     cd ./juvarya
                     
-                    # List the contents of the directory
+                    # List the contents
                     echo "Contents of $(pwd):"
                     ls -l
                     
