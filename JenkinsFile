@@ -4,20 +4,19 @@ pipeline {
     stages {
         stage('Checkout Code') {
             steps {
-                // Pull the latest code from GitHub
-                git branch: 'main', url: 'https://github.com/Hema887/Nivaas'
+                // Pull the latest code from GitHub using the updated credentials
+                git branch: 'main', credentialsId: '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', url: 'https://github.com/Hema887/Nivaas.git'
             }
         }
 
         stage('Deploy to VM') {
             steps {
-                // SSH into your VM and deploy the code
-                sshagent(['4c672dff-3d27-4891-85cd-4be84f880317']) {
+                sshagent(['New']) {
                     sh '''
-                    ssh juvarya@20.2.249.184 << 'EOF'
+                    ssh jenkins@20.2.249.184 << 'EOF'
                     cd ./juvarya
                     git pull origin main
-                    ./deploy.sh  # This script handles your app deployment (e.g., restarting the service)
+                    ./deploy.sh
                     EOF
                     '''
                 }
