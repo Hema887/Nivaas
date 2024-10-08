@@ -10,17 +10,15 @@ pipeline {
         }
 
         stage('Deploy to VM') {
-    steps {
-        sshagent(['New']) {
-            sh '''
-            ssh jenkins@20.2.249.184 << 'EOF'
-            echo "Listing contents of the directory..."
-            ls -l
-            EOF
-            '''
+            steps {
+                sshagent(['New']) {
+                    sh '''
+                    ssh jenkins@20.2.249.184 
+                    echo "Listing contents of the directory..." && 
+                    ls -l
+                    '''
+                }
+            }
         }
-    }
-}
-
     }
 }
