@@ -1,31 +1,39 @@
-stage('Deploy to VM') {
-    steps {
-        sshagent(['New']) {
-            sh '''
-            ssh jenkins@20.2.249.184 << 'EOF'
-            
-            # List the contents of the directory
-            echo "Contents of $(pwd):"
-            ls -l
+pipeline {
+    agent any
 
-            if [ -d "./juvarya" ]; then
-                cd ./juvarya
-                # Pull the latest code from the main branch
-                git pull origin main
+    stages {
+        stage('Checkout Code') {
+            steps {
+                // Pull the latest code from GitHub using the updated credentials
+                git branch: 'main', credentialsId: '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', url: 'https://github.com/Hema887/Nivaas.git'
+            }
+        }
 
-                # Run the deployment script if it exists
-                if [ -f ./deploy.sh ]; then
-                    ./deploy.sh
-                else
-                    echo "deploy.sh not found!"
-                    exit 1
-                fi
-            else
-                echo "Directory 'juvarya' not found!"
-                exit 1
-            fi
-            EOF
-            '''
+        stage('Deploy to VM') {
+            steps {
+                sshagent(['New']) {
+                    sh '''
+                    ssh jenkins@20.2.249.184 << 'EOF'
+                    
+                    # List the contents of the directory
+                    ls -l
+
+                    cd ./juvarya || { echo "Directory not found!"; exit 1; }
+                    
+                    # Pull the latest code from the main branch
+                    git pull origin main
+                    
+                    # Run the deployment script if it exists
+                    if [ -f ./deploy.sh ]; then
+                        ./deploy.sh
+                    else
+                        echo "deploy.sh not found!"
+                        exit 1
+                    fi
+                    EOF
+                    '''
+                }
+            }
         }
     }
 }
