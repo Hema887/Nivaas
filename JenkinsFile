@@ -14,13 +14,12 @@ pipeline {
                 sshagent(['New']) {
                     sh '''
                     ssh jenkins@20.2.249.184 << 'EOF'
+                    # Change to the directory
+                    cd ./juvarya
                     
                     # List the contents of the directory
                     echo "Contents of $(pwd):"
                     ls -l
-
-                    # Change to the directory
-                    cd ./juvarya || { echo "Directory not found!"; exit 1; }
                     
                     # Pull the latest code from the main branch
                     git pull origin main
