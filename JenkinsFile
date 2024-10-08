@@ -10,31 +10,17 @@ pipeline {
         }
 
         stage('Deploy to VM') {
-            steps {
-                sshagent(['New']) {
-                    sh '''
-                    ssh jenkins@20.2.249.184 << 'EOF'
-                    
-                    # List the contents of the directory
-                    ls -l
-
-                    EOF
-                    '''
-                    // cd ./juvarya || { echo "Directory not found!"; exit 1; }
-                    
-                    // # Pull the latest code from the main branch
-                    // git pull origin main
-                    
-                    // # Run the deployment script if it exists
-                    // if [ -f ./deploy.sh ]; then
-                    //     ./deploy.sh
-                    // else
-                    //     echo "deploy.sh not found!"
-                    //     exit 1
-                    // fi
-                    
-                }
-            }
+    steps {
+        sshagent(['New']) {
+            sh '''
+            ssh jenkins@20.2.249.184 << 'EOF'
+            echo "Listing contents of the directory..."
+            ls -l
+            EOF
+            '''
         }
+    }
+}
+
     }
 }
