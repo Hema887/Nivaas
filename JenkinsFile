@@ -14,8 +14,8 @@ pipeline {
                 sshagent(['New']) {
                     sh '''
                     ssh jenkins@20.2.249.184 << 'EOF'
-                    # Change to the directory
-                    cd ./juvarya
+                    # Change to the project directory
+                    cd /opt/Sample/juvarya
                     
                     # List the contents of the directory
                     echo "Contents of $(pwd):"
