@@ -1,53 +1,40 @@
 pipeline {
     agent any
-    tools {
-        maven 'myMaven'
-    }
 
     stages {
-        stage('PR Build') {
-            when {
-                changeRequest()  // Ensures that this stage runs when a PR is raised
-            }
+        stage('Checkout Code') {
             steps {
-                echo "Pull request detected, running mvn clean install..."
-                dir('juvarya') { 
-                    sh 'mvn clean install'
-                }
+                // Pull the latest code from GitHub using 
+                git branch: 'main', credentialsId: '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', url: 'https://github.com/Hema887/Nivaas.git'
             }
         }
 
-        // Post-Merge Deployment - Triggered when the PR is merged into main
-        stage('Post-Merge Deployment') {
-            when {
-                expression {
-                    return env.ghprbTargetBranch == 'main' && env.ghprbPullId == null
-                }
-            }
+        stage('Deploy to VM') {
             steps {
-                echo "Merge into main branch detected, deploying..."
-                sshagent(['6141d2f1-dd35-46de-8af1-e298f328a4b4']) {
+                sshagent(['New']) {
                     sh '''
-                        ssh jenkins@20.2.249.184 '
-                        git config --global --add safe.directory /opt/Sample/juvarya &&
-                        cd /opt/Sample/juvarya &&
-                        git stash &&
-                        git pull --allow-unrelated-histories &&
-                        git stash pop &&
-                        mvn clean install
-                        '
+                    ssh jenkins@20.2.249.184 << 'EOF'
+                    # Change to the project directory
+                    cd /opt/Sample/juvarya
+                    
+                    # List the contents of the directory
+                    echo "Contents of $(pwd):"
+                    ls -l
+                    
+                    # Pull the latest code from the main branch
+                    git pull origin main
+                    
+                    # Run the deployment script if it exists
+                    if [ -f ./deploy.sh ]; then
+                        ./deploy.sh
+                    else
+                        echo "deploy.sh not found!"
+                        exit 1
+                    fi
+                    EOF
                     '''
                 }
             }
-        }
-    }
-
-    post {
-        success {
-            echo 'Build and deployment were successful!'
-        }
-        failure {
-            echo 'Build or deployment failed. Please check the logs.'
         }
     }
 }
