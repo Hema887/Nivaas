@@ -4,7 +4,7 @@ pipeline {
     stages {
         stage('Checkout Code') {
             steps {
-                // Pull the latest code from GitHub using the updated credentials
+                // Pull the latest code from GitHub using 
                 git branch: 'main', credentialsId: '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', url: 'https://github.com/Hema887/Nivaas.git'
             }
         }
